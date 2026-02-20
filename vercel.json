@@ -7,13 +7,5 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/public/$1" }
-  ],
-  "env": {
-    "GITHUB_CLIENT_ID": "@github-client-id",
-    "GITHUB_CLIENT_SECRET": "@github-client-secret",
-    "JWT_SECRET": "@jwt-secret",
-    "ANTHROPIC_ADMIN_API_KEY": "@anthropic-admin-api-key",
-    "ANTHROPIC_ORG_ID": "@anthropic-org-id",
-    "ALLOWED_GITHUB_USERS": "@allowed-github-users"
-  }
+  ]
 }
