@@ -53,61 +53,55 @@ function getFixedCostsForPeriod(startDate, endDate) {
   return costs;
 }
 
-function getMonthRanges(startDate, endDate) {
-  const ranges = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-
-  while (cursor <= end) {
-    const monthStart = new Date(Math.max(cursor, start));
-    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
-    const rangeEnd = new Date(Math.min(monthEnd, end));
-
-    ranges.push({
-      start: monthStart.toISOString().split('T')[0],
-      end: rangeEnd.toISOString().split('T')[0],
-    });
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-  return ranges;
-}
-
-async function fetchMonthCost(start, end) {
-  const url = `${BASE_URL}/cost_report?starting_at=${start}T00:00:00Z&ending_at=${end}T23:59:59Z&bucket_width=1d`;
-  const res = await fetch(url, {
-    headers: {
-      'anthropic-version': '2023-06-01',
-      'x-api-key': ANTHROPIC_API_KEY,
-    },
-  });
-
-  if (!res.ok) {
+async function fetchWithRetry(url, headers, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(url, { headers });
+    if (res.ok) return res;
+    if (res.status === 429 && i < retries - 1) {
+      const wait = Math.pow(2, i + 1) * 1000;
+      console.log(`Rate limited, waiting ${wait}ms before retry ${i + 1}...`);
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
     const text = await res.text();
-    console.error(`Anthropic cost API error (${start}): ${res.status} ${text}`);
+    console.error(`Anthropic API error: ${res.status} ${text}`);
     return null;
   }
-
-  const page = await res.json();
-  let total = 0;
-  for (const bucket of (page.data || [])) {
-    for (const r of (bucket.results || [])) {
-      total += parseFloat(r.amount || '0');
-    }
-  }
-  return total;
+  return null;
 }
 
 async function fetchAnthropicCosts(startDate, endDate) {
   try {
-    const ranges = getMonthRanges(startDate, endDate);
-    const results = await Promise.all(
-      ranges.map(r => fetchMonthCost(r.start, r.end))
-    );
+    const headers = {
+      'anthropic-version': '2023-06-01',
+      'x-api-key': ANTHROPIC_API_KEY,
+    };
 
-    if (results.every(r => r === null)) return null;
+    let totalUSD = 0;
+    let currentStart = `${startDate}T00:00:00Z`;
+    const finalEnd = `${endDate}T23:59:59Z`;
 
-    return results.reduce((sum, v) => sum + (v || 0), 0);
+    while (currentStart < finalEnd) {
+      const url = `${BASE_URL}/cost_report?starting_at=${currentStart}&ending_at=${finalEnd}&bucket_width=1d`;
+      const res = await fetchWithRetry(url, headers);
+      if (!res) return null;
+
+      const page = await res.json();
+      const buckets = page.data || [];
+
+      for (const bucket of buckets) {
+        for (const r of (bucket.results || [])) {
+          totalUSD += parseFloat(r.amount || '0');
+        }
+      }
+
+      if (!page.has_more || buckets.length === 0) break;
+
+      // Use the last bucket's ending_at as the next starting_at
+      currentStart = buckets[buckets.length - 1].ending_at;
+    }
+
+    return totalUSD;
   } catch (err) {
     console.error('Anthropic cost fetch error:', err);
     return null;
