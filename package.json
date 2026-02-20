@@ -1,0 +1,12 @@
+{
+  "name": "medweb-billing",
+  "version": "1.0.0",
+  "description": "MedWeb Project - Billing & Cost Dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
