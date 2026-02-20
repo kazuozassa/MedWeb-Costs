@@ -32,8 +32,8 @@ body{height:100%;display:flex;justify-content:center}
 .warn-banner{background:#78350f66;border:1px solid #f59e0b;color:#fcd34d;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:.82rem;text-align:center}
 
 /* LAYOUT */
-.app{width:100%;max-width:1300px;padding:24px 40px 20px;display:flex;flex-direction:column}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:8px}
+.app{width:100%;max-width:1440px;padding:20px 40px 16px;display:flex;flex-direction:column}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
 .header-left{display:flex;align-items:center;gap:14px}
 .header h1{font-size:1.2rem;font-weight:700;color:var(--gold)}
 .user-info{display:flex;align-items:center;gap:10px}
@@ -44,7 +44,7 @@ body{height:100%;display:flex;justify-content:center}
 .refresh-ts{font-size:.7rem;color:var(--text2)}
 
 /* CARDS */
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
 .card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
 .card-label{font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
 .card-value{font-size:1.25rem;font-weight:600}
@@ -54,35 +54,35 @@ body{height:100%;display:flex;justify-content:center}
 .badge-orange{background:#7c2d1222;color:var(--orange);border:1px solid #7c2d1255}
 
 /* TABLE with inline bars */
-.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:14px}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:10px}
 
 /* MONTHLY TABLE */
-.monthly-table{width:100%;border-collapse:collapse;font-size:.78rem}
-.monthly-table th{text-align:center;color:var(--text2);font-weight:500;padding:7px 6px;border-bottom:1px solid var(--border);font-size:.68rem;text-transform:uppercase;letter-spacing:.3px}
+.monthly-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.monthly-table th{text-align:center;color:var(--text2);font-weight:500;padding:8px 8px;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.3px}
 .monthly-table th:first-child{text-align:left}
-.monthly-table td{padding:7px 6px;border-bottom:1px solid var(--border)22;text-align:center}
-.monthly-table td:first-child{text-align:left;color:var(--text2);font-size:.76rem}
+.monthly-table td{padding:8px 8px;border-bottom:1px solid var(--border)22;text-align:center}
+.monthly-table td:first-child{text-align:left;color:var(--text2);font-size:.82rem}
 .monthly-table .total-col{color:var(--gold);font-weight:600}
 .monthly-table .total-row td{border-top:2px solid var(--gold);color:var(--gold);font-weight:700;background:var(--surface2)}
 .monthly-table .empty{color:var(--border)}
-.monthly-table .month-val{font-size:.76rem}
+.monthly-table .month-val{font-size:.84rem}
 .section-title{font-size:.88rem;font-weight:600;margin-bottom:10px;color:var(--text)}
 .table-wrap{overflow-x:auto;flex:1}
-table{width:100%;border-collapse:collapse;font-size:.82rem}
-th{text-align:left;color:var(--text2);font-weight:500;padding:7px 10px;border-bottom:1px solid var(--border);font-size:.68rem;text-transform:uppercase;letter-spacing:.4px}
-td{padding:7px 10px;border-bottom:1px solid var(--border)22}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{text-align:left;color:var(--text2);font-weight:500;padding:9px 12px;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 12px;border-bottom:1px solid var(--border)22}
 tr:last-child td{border-bottom:none}
 tr.total-row{background:var(--surface2);font-weight:700}
 tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
 .text-right{text-align:right}
 .item-cell{display:flex;align-items:center;gap:10px}
 .item-name{flex-shrink:0}
-.item-bar{flex:1;height:14px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:60px}
-.item-bar-fill{height:100%;border-radius:4px}
+.item-bar{flex:1;height:22px;background:var(--surface2);border-radius:5px;overflow:hidden;min-width:60px}
+.item-bar-fill{height:100%;border-radius:5px}
 .item-pct{font-size:.68rem;color:var(--text2);flex-shrink:0;width:36px;text-align:right}
 
 /* FOOTER */
-.footer{margin-top:12px;padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.68rem;color:var(--text2);display:flex;flex-wrap:wrap;gap:2px 16px}
+.footer{margin-top:8px;padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.68rem;color:var(--text2);display:flex;flex-wrap:wrap;gap:2px 16px}
 
 /* SPINNER */
 .spinner-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;width:100%}
@@ -92,39 +92,47 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
 
 /* 2K */
 @media(min-width:1600px){
-  .app{max-width:1500px;padding:32px 48px 24px}
+  .app{max-width:1600px;padding:28px 48px 20px}
   .header h1{font-size:1.4rem}
-  .cards{gap:14px;margin-bottom:20px}
+  .cards{gap:14px;margin-bottom:16px}
   .card{padding:18px 20px}
-  .card-label{font-size:.74rem}
+  .card-label{font-size:.76rem}
   .card-value{font-size:1.5rem}
   .section{padding:20px 24px}
-  .section-title{font-size:1rem}
-  table{font-size:.9rem}
-  th{padding:9px 14px;font-size:.72rem}
-  td{padding:9px 14px}
-  .item-bar{height:16px}
-  .footer{font-size:.74rem;padding:10px 20px}
+  .section-title{font-size:1.05rem}
+  table{font-size:1rem}
+  th{padding:10px 16px;font-size:.76rem}
+  td{padding:10px 16px}
+  .monthly-table{font-size:.95rem}
+  .monthly-table th{font-size:.76rem;padding:10px 10px}
+  .monthly-table td{padding:10px 10px}
+  .monthly-table .month-val{font-size:.92rem}
+  .item-bar{height:26px;border-radius:6px}
+  .footer{font-size:.76rem;padding:10px 20px}
 }
 /* 4K */
 @media(min-width:2200px){
-  .app{max-width:1900px;padding:48px 72px 32px}
+  .app{max-width:2000px;padding:40px 72px 28px}
   .header h1{font-size:1.7rem}
   .user-info img{width:36px;height:36px}
   .user-info span{font-size:.95rem}
   .btn-logout,.btn-refresh{padding:6px 14px;font-size:.82rem}
-  .cards{gap:18px;margin-bottom:24px}
+  .cards{gap:18px;margin-bottom:20px}
   .card{padding:22px 24px;border-radius:16px}
-  .card-label{font-size:.82rem;margin-bottom:6px}
+  .card-label{font-size:.84rem;margin-bottom:6px}
   .card-value{font-size:1.8rem}
   .card-sub{font-size:.78rem}
   .section{padding:24px 28px;border-radius:16px}
-  .section-title{font-size:1.15rem;margin-bottom:14px}
-  table{font-size:1rem}
-  th{padding:12px 18px;font-size:.78rem}
-  td{padding:12px 18px}
-  .item-bar{height:20px;border-radius:6px}
-  .item-pct{font-size:.78rem;width:42px}
+  .section-title{font-size:1.2rem;margin-bottom:14px}
+  table{font-size:1.1rem}
+  th{padding:13px 20px;font-size:.82rem}
+  td{padding:13px 20px}
+  .monthly-table{font-size:1.05rem}
+  .monthly-table th{font-size:.8rem;padding:12px 12px}
+  .monthly-table td{padding:12px 12px}
+  .monthly-table .month-val{font-size:1rem}
+  .item-bar{height:30px;border-radius:6px}
+  .item-pct{font-size:.82rem;width:42px}
   .footer{font-size:.82rem;padding:12px 24px;border-radius:16px}
   .refresh-ts{font-size:.78rem}
 }
