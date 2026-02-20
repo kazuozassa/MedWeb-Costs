@@ -1,19 +1,20 @@
 const { verifyAuth } = require('./_auth');
 
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_ADMIN_API_KEY;
+const BASE_URL = 'https://api.anthropic.com/v1/organizations';
+
 const IOF_RATE = 0.035;
 const BRL_RATE = 5.80;
 
-// Monthly cost entries — each entry is one charge in one month
-// currency: 'BRL' = already charged in BRL (no IOF), 'USD' = needs conversion + IOF
-const MONTHLY_COSTS = [
-  // API Tokens — Anthropic API (acumulado, distribuído por mês de uso)
-  { month: '2025-10', id: 'api_tokens', label: 'API Tokens', usd: 200, currency: 'USD' },
-  { month: '2025-11', id: 'api_tokens', label: 'API Tokens', usd: 350, currency: 'USD' },
-  { month: '2025-12', id: 'api_tokens', label: 'API Tokens', usd: 400, currency: 'USD' },
-  { month: '2026-01', id: 'api_tokens', label: 'API Tokens', usd: 450, currency: 'USD' },
-  { month: '2026-02', id: 'api_tokens', label: 'API Tokens', usd: 366.32, currency: 'USD' },
+// In-memory cache for Anthropic API data
+let apiCache = null;
+let apiCacheAt = 0;
+const API_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+let apiCooldownUntil = 0;
 
-  // Claude.ai — faturas reais do billing page
+// Fixed costs (non-API) — actual invoices and subscriptions
+const FIXED_MONTHLY = [
+  // Claude.ai — faturas reais do billing page (BRL)
   { month: '2025-05', id: 'claude_ai', label: 'Claude.ai', brl: 550.00, currency: 'BRL' },
   { month: '2026-01', id: 'claude_ai', label: 'Claude.ai', brl: 1100.00, currency: 'BRL' },
   { month: '2026-02', id: 'claude_ai', label: 'Claude.ai', brl: 81.84, currency: 'BRL' },
@@ -37,24 +38,27 @@ const MONTHLY_COSTS = [
   { month: '2025-10', id: 'apple_developer', label: 'Apple Developer', usd: 99, currency: 'USD' },
 ];
 
+// Fallback API token estimates (used when API is unavailable)
+const FALLBACK_API_TOKENS = [
+  { month: '2025-10', usd: 200 },
+  { month: '2025-11', usd: 350 },
+  { month: '2025-12', usd: 400 },
+  { month: '2026-01', usd: 450 },
+  { month: '2026-02', usd: 366.32 },
+];
+
 function convertItem(item) {
   if (item.currency === 'BRL') {
     return {
-      month: item.month,
-      id: item.id,
-      label: item.label,
+      month: item.month, id: item.id, label: item.label,
       usd: Math.round((item.brl / BRL_RATE) * 100) / 100,
-      brl: item.brl,
-      iof: 0,
-      total_brl: item.brl,
+      brl: item.brl, iof: 0, total_brl: item.brl,
     };
   }
   const brl = item.usd * BRL_RATE;
   const iof = brl * IOF_RATE;
   return {
-    month: item.month,
-    id: item.id,
-    label: item.label,
+    month: item.month, id: item.id, label: item.label,
     usd: item.usd,
     brl: Math.round(brl * 100) / 100,
     iof: Math.round(iof * 100) / 100,
@@ -62,15 +66,90 @@ function convertItem(item) {
   };
 }
 
-module.exports = (req, res) => {
+// Fetch monthly API costs from Anthropic Admin API
+async function fetchApiTokensByMonth() {
+  if (!ANTHROPIC_API_KEY) return null;
+
+  // Check cache
+  if (apiCache && (Date.now() - apiCacheAt) < API_CACHE_TTL) return apiCache;
+
+  // Check cooldown
+  if (Date.now() < apiCooldownUntil) return null;
+
+  try {
+    const headers = { 'anthropic-version': '2023-06-01', 'x-api-key': ANTHROPIC_API_KEY };
+    const startDate = '2025-10-01';
+    const endDate = new Date().toISOString().split('T')[0];
+
+    // Fetch all pages sequentially
+    const dailyTotals = {};
+    let currentStart = `${startDate}T00:00:00Z`;
+    const finalEnd = `${endDate}T23:59:59Z`;
+
+    while (currentStart < finalEnd) {
+      const url = `${BASE_URL}/cost_report?starting_at=${currentStart}&ending_at=${finalEnd}&bucket_width=1d`;
+      const res = await fetch(url, { headers });
+
+      if (res.status === 429) {
+        console.error('Anthropic API rate limited, cooling down 15min');
+        apiCooldownUntil = Date.now() + 15 * 60 * 1000;
+        return null;
+      }
+      if (!res.ok) {
+        console.error(`Anthropic API error: ${res.status}`);
+        return null;
+      }
+
+      const page = await res.json();
+      const buckets = page.data || [];
+
+      for (const bucket of buckets) {
+        const month = bucket.starting_at.substring(0, 7); // "2025-10"
+        for (const r of (bucket.results || [])) {
+          dailyTotals[month] = (dailyTotals[month] || 0) + parseFloat(r.amount || '0');
+        }
+      }
+
+      if (!page.has_more || buckets.length === 0) break;
+      await new Promise(r => setTimeout(r, 1500));
+      currentStart = buckets[buckets.length - 1].ending_at;
+    }
+
+    // Convert to monthly array
+    const result = Object.entries(dailyTotals)
+      .map(([month, usd]) => ({ month, usd: Math.round(usd * 100) / 100 }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    apiCache = result;
+    apiCacheAt = Date.now();
+    return result;
+  } catch (err) {
+    console.error('Anthropic API fetch error:', err);
+    return null;
+  }
+}
+
+module.exports = async (req, res) => {
   const user = verifyAuth(req);
   if (!user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const entries = MONTHLY_COSTS.map(convertItem);
+  // Try to get real API data, fallback to estimates
+  const apiMonthly = await fetchApiTokensByMonth();
+  const apiDataAvailable = apiMonthly !== null;
+  const apiTokens = apiDataAvailable ? apiMonthly : FALLBACK_API_TOKENS;
 
-  // Aggregate by service for summary table
+  // Build API token entries
+  const apiEntries = apiTokens.map(t => ({
+    month: t.month, id: 'api_tokens', label: 'API Tokens', usd: t.usd, currency: 'USD',
+  }));
+
+  // Combine all entries
+  const allCosts = [...apiEntries, ...FIXED_MONTHLY];
+  const entries = allCosts.map(convertItem);
+
+  // Aggregate by service
   const byService = {};
   for (const e of entries) {
     if (!byService[e.id]) {
@@ -94,11 +173,7 @@ module.exports = (req, res) => {
   const monthly = months.map(m => {
     const monthEntries = entries.filter(e => e.month === m);
     const total_brl = monthEntries.reduce((s, e) => s + e.total_brl, 0);
-    return {
-      month: m,
-      entries: monthEntries,
-      total_brl: Math.round(total_brl * 100) / 100,
-    };
+    return { month: m, entries: monthEntries, total_brl: Math.round(total_brl * 100) / 100 };
   });
 
   const totalUsd = items.reduce((s, c) => s + c.usd, 0);
@@ -111,6 +186,7 @@ module.exports = (req, res) => {
     exchange: { usd_brl: BRL_RATE, iof_rate: IOF_RATE },
     items,
     monthly,
+    api_available: apiDataAvailable,
     totals: {
       usd: Math.round(totalUsd * 100) / 100,
       brl: Math.round(totalBrl * 100) / 100,

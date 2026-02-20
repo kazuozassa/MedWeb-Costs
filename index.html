@@ -279,7 +279,16 @@ async function loadCosts() {
     data = await res.json();
   } catch (e) { data = FALLBACK_DATA; isFallback = true; }
 
-  document.getElementById('api-warn').style.display = isFallback ? '' : 'none';
+  const warn = document.getElementById('api-warn');
+  if (isFallback) {
+    warn.innerHTML = '&#9888;&#65039; Não foi possível conectar ao servidor. Exibindo dados estimados.';
+    warn.style.display = '';
+  } else if (data.api_available === false) {
+    warn.innerHTML = '&#9888;&#65039; API Anthropic indisponível. Valores de API Tokens são estimativas.';
+    warn.style.display = '';
+  } else {
+    warn.style.display = 'none';
+  }
   renderCards(data);
   renderTable(data);
   renderMonthly(data);
