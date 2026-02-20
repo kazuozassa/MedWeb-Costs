@@ -57,13 +57,13 @@ function getFixedCostsForPeriod(startDate, endDate) {
   return costs;
 }
 
-async function fetchWithRetry(url, headers, retries = 4) {
+async function fetchWithRetry(url, headers, retries = 3) {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, { headers });
     if (res.ok) return res;
     if (res.status === 429 && i < retries - 1) {
       const retryAfter = res.headers.get('retry-after');
-      const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, i + 1) * 2000;
+      const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : (i + 1) * 10000;
       console.log(`Rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})...`);
       await new Promise(r => setTimeout(r, wait));
       continue;
@@ -103,6 +103,8 @@ async function fetchAnthropicCosts(startDate, endDate) {
       if (!page.has_more || buckets.length === 0) break;
 
       // Paginate: use last bucket's ending_at as next starting_at
+      // Add delay between pages to respect rate limits
+      await new Promise(r => setTimeout(r, 2000));
       currentStart = buckets[buckets.length - 1].ending_at;
     }
 
