@@ -32,7 +32,7 @@ body{height:100%;display:flex;justify-content:center}
 .warn-banner{background:#78350f66;border:1px solid #f59e0b;color:#fcd34d;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:.82rem;text-align:center}
 
 /* LAYOUT */
-.app{width:100%;max-width:1300px;padding:24px 40px 20px;display:flex;flex-direction:column;height:100vh}
+.app{width:100%;max-width:1300px;padding:24px 40px 20px;display:flex;flex-direction:column}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:8px}
 .header-left{display:flex;align-items:center;gap:14px}
 .header h1{font-size:1.2rem;font-weight:700;color:var(--gold)}
@@ -54,7 +54,18 @@ body{height:100%;display:flex;justify-content:center}
 .badge-orange{background:#7c2d1222;color:var(--orange);border:1px solid #7c2d1255}
 
 /* TABLE with inline bars */
-.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;flex:1;min-height:0;display:flex;flex-direction:column}
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:14px}
+
+/* MONTHLY TABLE */
+.monthly-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.monthly-table th{text-align:center;color:var(--text2);font-weight:500;padding:7px 6px;border-bottom:1px solid var(--border);font-size:.68rem;text-transform:uppercase;letter-spacing:.3px}
+.monthly-table th:first-child{text-align:left}
+.monthly-table td{padding:7px 6px;border-bottom:1px solid var(--border)22;text-align:center}
+.monthly-table td:first-child{text-align:left;color:var(--text2);font-size:.76rem}
+.monthly-table .total-col{color:var(--gold);font-weight:600}
+.monthly-table .total-row td{border-top:2px solid var(--gold);color:var(--gold);font-weight:700;background:var(--surface2)}
+.monthly-table .empty{color:var(--border)}
+.monthly-table .month-val{font-size:.76rem}
 .section-title{font-size:.88rem;font-weight:600;margin-bottom:10px;color:var(--text)}
 .table-wrap{overflow-x:auto;flex:1}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -176,6 +187,11 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
     <div class="table-wrap"><table id="detail-table"></table></div>
   </div>
 
+  <div class="section">
+    <div class="section-title">Custos por Mês</div>
+    <div class="table-wrap"><table class="monthly-table" id="monthly-table"></table></div>
+  </div>
+
   <div class="footer" id="footer"></div>
 </div>
 
@@ -207,6 +223,14 @@ const FALLBACK_DATA = {
     { id: 'lovable_pro', label: 'Lovable Pro (5 meses)', usd: 125, brl: 725, iof: 25.38, total_brl: 750.38 },
     { id: 'vercel_pro', label: 'Vercel Pro (5 meses)', usd: 100, brl: 580, iof: 20.3, total_brl: 600.3 },
     { id: 'apple_developer', label: 'Apple Developer (anual)', usd: 99, brl: 574.2, iof: 20.1, total_brl: 594.3 }
+  ],
+  monthly: [
+    { month: '2025-05', entries: [{ id: 'claude_ai', label: 'Claude.ai', total_brl: 550 }], total_brl: 550 },
+    { month: '2025-10', entries: [{ id: 'api_tokens', label: 'API Tokens', total_brl: 1199.6 },{ id: 'lovable_pro', label: 'Lovable Pro', total_brl: 150.08 },{ id: 'vercel_pro', label: 'Vercel Pro', total_brl: 120.06 },{ id: 'apple_developer', label: 'Apple Developer', total_brl: 594.3 }], total_brl: 2064.04 },
+    { month: '2025-11', entries: [{ id: 'api_tokens', label: 'API Tokens', total_brl: 2099.3 },{ id: 'lovable_pro', label: 'Lovable Pro', total_brl: 150.08 },{ id: 'vercel_pro', label: 'Vercel Pro', total_brl: 120.06 }], total_brl: 2369.44 },
+    { month: '2025-12', entries: [{ id: 'api_tokens', label: 'API Tokens', total_brl: 2399.2 },{ id: 'lovable_pro', label: 'Lovable Pro', total_brl: 150.08 },{ id: 'vercel_pro', label: 'Vercel Pro', total_brl: 120.06 }], total_brl: 2669.34 },
+    { month: '2026-01', entries: [{ id: 'api_tokens', label: 'API Tokens', total_brl: 2699.1 },{ id: 'claude_ai', label: 'Claude.ai', total_brl: 1100 },{ id: 'lovable_pro', label: 'Lovable Pro', total_brl: 150.08 },{ id: 'vercel_pro', label: 'Vercel Pro', total_brl: 120.06 }], total_brl: 4069.24 },
+    { month: '2026-02', entries: [{ id: 'api_tokens', label: 'API Tokens', total_brl: 2197.02 },{ id: 'claude_ai', label: 'Claude.ai', total_brl: 81.84 },{ id: 'claude_ai_extra', label: 'Claude.ai Uso Extra', total_brl: 275 },{ id: 'lovable_pro', label: 'Lovable Pro', total_brl: 150.08 },{ id: 'vercel_pro', label: 'Vercel Pro', total_brl: 120.06 }], total_brl: 2824 }
   ],
   totals: { usd: 2436.33, brl: 14559.74, iof: 424.34, budget_brl: 536500, budget_pct: 2.71 },
   fetched_at: new Date().toISOString(),
@@ -258,6 +282,7 @@ async function loadCosts() {
   document.getElementById('api-warn').style.display = isFallback ? '' : 'none';
   renderCards(data);
   renderTable(data);
+  renderMonthly(data);
   renderFooter(data);
   document.getElementById('refresh-ts').textContent = new Date(data.fetched_at || Date.now()).toLocaleString('pt-BR');
 }
@@ -330,6 +355,58 @@ function renderTable(data) {
         <td class="text-right mono">R$ ${fmt(grand)}</td>
       </tr>
     </tbody>`;
+}
+
+const MONTH_NAMES = {
+  '2025-05':'Mai/25','2025-10':'Out/25','2025-11':'Nov/25','2025-12':'Dez/25',
+  '2026-01':'Jan/26','2026-02':'Fev/26','2026-03':'Mar/26'
+};
+
+function renderMonthly(data) {
+  if (!data.monthly) return;
+  const months = data.monthly.map(m => m.month);
+  // Get unique services preserving order
+  const serviceIds = [];
+  const serviceLabels = {};
+  for (const m of data.monthly) {
+    for (const e of m.entries) {
+      if (!serviceLabels[e.id]) { serviceIds.push(e.id); serviceLabels[e.id] = e.label; }
+    }
+  }
+
+  // Build lookup: serviceId -> month -> total_brl
+  const lookup = {};
+  for (const m of data.monthly) {
+    for (const e of m.entries) {
+      const key = `${e.id}_${m.month}`;
+      lookup[key] = (lookup[key] || 0) + e.total_brl;
+    }
+  }
+
+  const hdr = `<thead><tr><th>Serviço</th>${months.map(m =>
+    `<th>${MONTH_NAMES[m] || m}</th>`).join('')}<th class="total-col">Total</th></tr></thead>`;
+
+  const rows = serviceIds.map(sid => {
+    const color = CATEGORY_COLORS[sid] || '#888';
+    let rowTotal = 0;
+    const cells = months.map(m => {
+      const val = lookup[`${sid}_${m}`] || 0;
+      rowTotal += val;
+      return val > 0
+        ? `<td class="mono month-val">R$ ${fmt(val)}</td>`
+        : `<td class="empty">—</td>`;
+    });
+    return `<tr><td><span style="color:${color}">●</span> ${serviceLabels[sid]}</td>${cells.join('')}<td class="mono total-col">R$ ${fmt(rowTotal)}</td></tr>`;
+  }).join('');
+
+  const totals = months.map(m => {
+    const mData = data.monthly.find(x => x.month === m);
+    return `<td class="mono">R$ ${fmt(mData ? mData.total_brl : 0)}</td>`;
+  });
+  const grandTotal = data.monthly.reduce((s, m) => s + m.total_brl, 0);
+
+  document.getElementById('monthly-table').innerHTML = `${hdr}<tbody>${rows}
+    <tr class="total-row"><td>Total</td>${totals.join('')}<td class="mono">R$ ${fmt(grandTotal)}</td></tr></tbody>`;
 }
 
 function renderFooter(data) {
