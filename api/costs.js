@@ -15,10 +15,17 @@ const FIXED_COSTS = [
 const IOF_RATE = 0.035;
 const BRL_RATE = 5.80;
 
+// Fallback: last known API token cost (updated manually or when API succeeds)
+// Update this value periodically by checking Anthropic billing dashboard
+const FALLBACK_API_TOKENS_USD = parseFloat(process.env.FALLBACK_API_TOKENS_USD || '1766.32');
+
 // In-memory cache (survives across warm invocations on Vercel)
 let cachedResult = null;
 let cachedAt = 0;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+// Cooldown: don't retry Anthropic API for 15 min after failure
+let lastApiFail = 0;
+const API_COOLDOWN = 15 * 60 * 1000;
 
 function getFixedCostsForPeriod(startDate, endDate) {
   const costs = [];
@@ -57,21 +64,11 @@ function getFixedCostsForPeriod(startDate, endDate) {
   return costs;
 }
 
-async function fetchWithRetry(url, headers, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    const res = await fetch(url, { headers });
-    if (res.ok) return res;
-    if (res.status === 429 && i < retries - 1) {
-      const retryAfter = res.headers.get('retry-after');
-      const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : (i + 1) * 10000;
-      console.log(`Rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})...`);
-      await new Promise(r => setTimeout(r, wait));
-      continue;
-    }
-    const text = await res.text();
-    console.error(`Anthropic API error: ${res.status} ${text}`);
-    return null;
-  }
+async function fetchWithRetry(url, headers) {
+  const res = await fetch(url, { headers });
+  if (res.ok) return res;
+  const text = await res.text();
+  console.error(`Anthropic API error: ${res.status} ${text}`);
   return null;
 }
 
@@ -130,10 +127,19 @@ module.exports = async (req, res) => {
     return res.json({ ...cachedResult, _cached: true });
   }
 
-  // Fetch from Anthropic
-  const apiTokensResult = await fetchAnthropicCosts(startDate, endDate);
-  const apiTokensUSD = apiTokensResult !== null ? apiTokensResult : 0;
+  // Fetch from Anthropic (skip if in cooldown after recent failure)
+  let apiTokensResult = null;
+  const inCooldown = (Date.now() - lastApiFail) < API_COOLDOWN;
+
+  if (!inCooldown) {
+    apiTokensResult = await fetchAnthropicCosts(startDate, endDate);
+    if (apiTokensResult === null) {
+      lastApiFail = Date.now();
+    }
+  }
+
   const apiDataAvailable = apiTokensResult !== null;
+  const apiTokensUSD = apiDataAvailable ? apiTokensResult : FALLBACK_API_TOKENS_USD;
 
   const apiTokensBRL = apiTokensUSD * BRL_RATE;
   const apiTokensIOF = apiTokensBRL * IOF_RATE;

@@ -257,7 +257,11 @@ async function loadCosts() {
   }
 
   const warn = document.getElementById('api-warn');
-  warn.style.display = isFallback ? '' : 'none';
+  const showWarn = isFallback || data.api_available === false;
+  warn.style.display = showWarn ? '' : 'none';
+  if (!isFallback && data.api_available === false) {
+    warn.innerHTML = '&#9888;&#65039; API da Anthropic indisponível (rate limit). Exibindo valor estimado para API Tokens.';
+  }
 
   renderCards(data);
   renderChart(data);
