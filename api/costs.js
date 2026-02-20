@@ -53,42 +53,40 @@ function getFixedCostsForPeriod(startDate, endDate) {
   return costs;
 }
 
-async function fetchAnthropicUsage(startDate, endDate) {
-  try {
-    const url = `${BASE_URL}/usage_report/messages?starting_at=${startDate}T00:00:00Z&ending_at=${endDate}T23:59:59Z&bucket_width=1d&group_by[]=model`;
-    const res = await fetch(url, {
-      headers: {
-        'anthropic-version': '2023-06-01',
-        'x-api-key': ANTHROPIC_API_KEY,
-      },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Anthropic usage API error:', res.status, text);
-      return null;
-    }
-    return res.json();
-  } catch (err) {
-    console.error('Anthropic usage fetch error:', err);
-    return null;
-  }
-}
-
 async function fetchAnthropicCosts(startDate, endDate) {
   try {
-    const url = `${BASE_URL}/cost_report?starting_at=${startDate}T00:00:00Z&ending_at=${endDate}T23:59:59Z&bucket_width=1mo`;
-    const res = await fetch(url, {
-      headers: {
-        'anthropic-version': '2023-06-01',
-        'x-api-key': ANTHROPIC_API_KEY,
-      },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('Anthropic cost API error:', res.status, text);
-      return null;
-    }
-    return res.json();
+    let totalUSD = 0;
+    let nextPage = null;
+
+    do {
+      let url = `${BASE_URL}/cost_report?starting_at=${startDate}T00:00:00Z&ending_at=${endDate}T23:59:59Z&bucket_width=1d`;
+      if (nextPage) url += `&page=${nextPage}`;
+
+      const res = await fetch(url, {
+        headers: {
+          'anthropic-version': '2023-06-01',
+          'x-api-key': ANTHROPIC_API_KEY,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('Anthropic cost API error:', res.status, text);
+        return null;
+      }
+
+      const page = await res.json();
+
+      for (const bucket of (page.data || [])) {
+        for (const r of (bucket.results || [])) {
+          totalUSD += parseFloat(r.amount || '0');
+        }
+      }
+
+      nextPage = page.has_more ? page.next_page : null;
+    } while (nextPage);
+
+    return totalUSD;
   } catch (err) {
     console.error('Anthropic cost fetch error:', err);
     return null;
@@ -106,23 +104,10 @@ module.exports = async (req, res) => {
   const startDate = req.query.start || '2025-10-01';
   const endDate = req.query.end || new Date().toISOString().split('T')[0];
 
-  // Fetch Anthropic data in parallel
-  const [usage, costs] = await Promise.all([
-    fetchAnthropicUsage(startDate, endDate),
-    fetchAnthropicCosts(startDate, endDate),
-  ]);
-
-  // Calculate API token costs in USD from cost report
-  let apiTokensUSD = 0;
-  if (costs && costs.data) {
-    for (const bucket of costs.data) {
-      // Cost values are in cents as strings
-      const tokenCost = parseFloat(bucket.token_usage_cost || '0') / 100;
-      const searchCost = parseFloat(bucket.web_search_cost || '0') / 100;
-      const codeCost = parseFloat(bucket.code_execution_cost || '0') / 100;
-      apiTokensUSD += tokenCost + searchCost + codeCost;
-    }
-  }
+  // Fetch Anthropic cost data (with pagination)
+  const apiTokensResult = await fetchAnthropicCosts(startDate, endDate);
+  const apiTokensUSD = apiTokensResult !== null ? apiTokensResult : 0;
+  const apiDataAvailable = apiTokensResult !== null;
 
   const apiTokensBRL = apiTokensUSD * BRL_RATE;
   const apiTokensIOF = apiTokensBRL * IOF_RATE;
@@ -147,9 +132,8 @@ module.exports = async (req, res) => {
       brl: Math.round(apiTokensBRL * 100) / 100,
       iof: Math.round(apiTokensIOF * 100) / 100,
       total_brl: Math.round((apiTokensBRL + apiTokensIOF) * 100) / 100,
-      usage_raw: usage,
-      costs_raw: costs,
     },
+    api_available: apiDataAvailable,
     fixed_costs: fixedCosts,
     totals: {
       usd: Math.round(totalUSD * 100) / 100,
