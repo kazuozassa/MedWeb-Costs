@@ -215,26 +215,25 @@ const ERROR_MSGS = {
 };
 
 const CATEGORY_COLORS = {
-  api_tokens: '#7c9aff',
-  claude_max_5x: '#a78bfa',
-  claude_max_20x: '#c084fc',
+  claude_ai: '#a78bfa',
   lovable_pro: '#f472b6',
   vercel_pro: '#38bdf8',
   apple_developer: '#60a5fa'
 };
 
 const FALLBACK_DATA = {
-  period: { start: '2025-10-01', end: new Date().toISOString().split('T')[0] },
+  period: { start: '2025-05-01', end: new Date().toISOString().split('T')[0] },
   exchange: { usd_brl: 5.80, iof_rate: 0.035 },
-  api_tokens: { usd: 1766.32, brl: 10244.66, iof: 358.56, total_brl: 10603.22 },
-  fixed_costs: [
-    { id: 'claude_max_5x', label: 'Claude Max 5x (4 meses)', months: 4, usd: 400, brl: 2320, iof: 81.2, total_brl: 2401.2 },
-    { id: 'claude_max_20x', label: 'Claude Max 20x (1 mês)', months: 1, usd: 200, brl: 1160, iof: 40.6, total_brl: 1200.6 },
-    { id: 'lovable_pro', label: 'Lovable Pro (5 meses)', months: 5, usd: 125, brl: 725, iof: 25.38, total_brl: 750.38 },
-    { id: 'vercel_pro', label: 'Vercel Pro (5 meses)', months: 5, usd: 100, brl: 580, iof: 20.3, total_brl: 600.3 },
-    { id: 'apple_developer', label: 'Apple Developer (anual)', months: 1, usd: 99, brl: 574.2, iof: 20.1, total_brl: 594.3 }
+  items: [
+    { id: 'claude_ai', label: 'Claude.ai (mai/2025)', usd: 94.83, brl: 550, iof: 0, total_brl: 550 },
+    { id: 'claude_ai', label: 'Claude.ai (jan/2026)', usd: 189.66, brl: 1100, iof: 0, total_brl: 1100 },
+    { id: 'claude_ai', label: 'Claude.ai (fev/2026)', usd: 14.11, brl: 81.84, iof: 0, total_brl: 81.84 },
+    { id: 'claude_ai', label: 'Claude.ai Uso Extra', usd: 47.41, brl: 275, iof: 0, total_brl: 275 },
+    { id: 'lovable_pro', label: 'Lovable Pro (5 meses)', usd: 125, brl: 725, iof: 25.38, total_brl: 750.38 },
+    { id: 'vercel_pro', label: 'Vercel Pro (5 meses)', usd: 100, brl: 580, iof: 20.3, total_brl: 600.3 },
+    { id: 'apple_developer', label: 'Apple Developer (anual)', usd: 99, brl: 574.2, iof: 20.1, total_brl: 594.3 }
   ],
-  totals: { usd: 2690.32, brl: 16149.9, budget_brl: 536500, budget_pct: 3.01 },
+  totals: { usd: 670.01, brl: 3956.52, iof: 65.78, budget_brl: 536500, budget_pct: 0.74 },
   fetched_at: new Date().toISOString(),
   _fallback: true
 };
@@ -312,11 +311,7 @@ async function loadCosts() {
   }
 
   const warn = document.getElementById('api-warn');
-  const showWarn = isFallback || data.api_available === false;
-  warn.style.display = showWarn ? '' : 'none';
-  if (!isFallback && data.api_available === false) {
-    warn.innerHTML = '&#9888;&#65039; API da Anthropic indisponível (rate limit). Exibindo valor estimado para API Tokens.';
-  }
+  warn.style.display = isFallback ? '' : 'none';
 
   renderCards(data);
   renderChart(data);
@@ -331,7 +326,7 @@ async function loadCosts() {
 function renderCards(data) {
   const t = data.totals;
   const ex = data.exchange;
-  const totalIof = data.api_tokens.iof + data.fixed_costs.reduce((s, c) => s + c.iof, 0);
+  const totalIof = t.iof || data.items.reduce((s, c) => s + c.iof, 0);
   const pctClass = t.budget_pct < 10 ? 'badge-green' : 'badge-orange';
 
   document.getElementById('cards').innerHTML = `
@@ -344,25 +339,22 @@ function renderCards(data) {
     <div class="card">
       <div class="card-label">Total em USD</div>
       <div class="card-value mono">$ ${fmt(t.usd)}</div>
-      <div class="card-sub">Valor antes da conversão</div>
+      <div class="card-sub">Valor equivalente</div>
     </div>
     <div class="card">
       <div class="card-label">Câmbio USD → BRL</div>
       <div class="card-value mono" style="color:var(--green)">R$ ${fmt(ex.usd_brl)}</div>
-      <div class="card-sub">Taxa utilizada</div>
+      <div class="card-sub">Taxa de referência</div>
     </div>
     <div class="card">
       <div class="card-label">IOF Total</div>
       <div class="card-value mono" style="color:var(--orange)">R$ ${fmt(totalIof)}</div>
-      <div class="card-sub">Taxa: ${(ex.iof_rate * 100).toFixed(1)}%</div>
+      <div class="card-sub">Taxa: ${(ex.iof_rate * 100).toFixed(1)}% (compras USD)</div>
     </div>`;
 }
 
 function renderChart(data) {
-  const items = [
-    { id: 'api_tokens', label: 'API Tokens', total: data.api_tokens.total_brl },
-    ...data.fixed_costs.map(c => ({ id: c.id, label: c.label, total: c.total_brl }))
-  ];
+  const items = data.items.map(c => ({ id: c.id, label: c.label, total: c.total_brl }));
   const max = Math.max(...items.map(i => i.total));
   const grand = items.reduce((s, i) => s + i.total, 0);
 
@@ -383,10 +375,7 @@ function renderChart(data) {
 }
 
 function renderTable(data) {
-  const rows = [
-    { label: 'API Tokens (Anthropic)', usd: data.api_tokens.usd, brl: data.api_tokens.brl, iof: data.api_tokens.iof, total: data.api_tokens.total_brl },
-    ...data.fixed_costs.map(c => ({ label: c.label, usd: c.usd, brl: c.brl, iof: c.iof, total: c.total_brl }))
-  ];
+  const rows = data.items.map(c => ({ label: c.label, usd: c.usd, brl: c.brl, iof: c.iof, total: c.total_brl }));
   const sumUsd = rows.reduce((s, r) => s + r.usd, 0);
   const sumBrl = rows.reduce((s, r) => s + r.brl, 0);
   const sumIof = rows.reduce((s, r) => s + r.iof, 0);
@@ -421,8 +410,8 @@ function renderTable(data) {
 function renderFooter(data) {
   document.getElementById('footer').innerHTML = `
     <strong>Notas:</strong><br>
-    &#8226; Dados de consumo da API obtidos via Anthropic Admin API (endpoint de cost report).<br>
-    &#8226; Câmbio USD → BRL fixado em R$ ${fmt(data.exchange.usd_brl)}. IOF de ${(data.exchange.iof_rate * 100).toFixed(1)}% aplicado sobre todas as transações internacionais.<br>
+    &#8226; Custos do Claude.ai baseados nas faturas reais (já cobradas em BRL, sem IOF adicional).<br>
+    &#8226; Demais serviços (Lovable, Vercel, Apple) em USD — câmbio de referência R$ ${fmt(data.exchange.usd_brl)}, IOF de ${(data.exchange.iof_rate * 100).toFixed(1)}%.<br>
     &#8226; Período: ${new Date(data.period.start).toLocaleDateString('pt-BR')} a ${new Date(data.period.end).toLocaleDateString('pt-BR')}.<br>
     &#8226; Orçamento total do projeto MedWeb: R$ ${fmt(data.totals.budget_brl)}.`;
 }
