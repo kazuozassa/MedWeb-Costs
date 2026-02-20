@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedWeb — Billing Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080d;--surface:#0f0f18;--surface2:#16162a;
+  --gold:#d4a574;--green:#7ecba1;--orange:#e8a87c;
+  --text:#e4e4e7;--text2:#9a9ab0;--border:#1e1e35;
+  --radius:14px;
+  --api:#7c9aff;--max5:#a78bfa;--max20:#c084fc;--lovable:#f472b6;--vercel:#38bdf8;--apple:#60a5fa;
+}
+html{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+body{min-height:100vh}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* LOGIN */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 40px;text-align:center;max-width:400px;width:100%}
+.login-card h1{font-size:1.6rem;font-weight:700;margin-bottom:8px;color:var(--gold)}
+.login-card p{color:var(--text2);margin-bottom:32px;font-size:.95rem}
+.login-card .logo{font-size:2.4rem;margin-bottom:16px}
+.btn-github{display:inline-flex;align-items:center;gap:10px;background:#24292e;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none;transition:background .2s}
+.btn-github:hover{background:#3a3f44}
+.btn-github svg{width:20px;height:20px;fill:#fff}
+.error-banner{background:#7f1d1d88;border:1px solid #ef4444;color:#fca5a5;padding:12px 16px;border-radius:10px;margin-bottom:24px;font-size:.9rem}
+.warn-banner{background:#78350f66;border:1px solid #f59e0b;color:#fcd34d;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:.9rem;text-align:center}
+
+/* LAYOUT */
+.app{max-width:1080px;margin:0 auto;padding:24px 20px 60px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.header h1{font-size:1.4rem;font-weight:700;color:var(--gold)}
+.user-info{display:flex;align-items:center;gap:10px}
+.user-info img{width:32px;height:32px;border-radius:50%;border:2px solid var(--border)}
+.user-info span{font-size:.9rem;color:var(--text2)}
+.btn-logout,.btn-refresh{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit;transition:border-color .2s}
+.btn-logout:hover,.btn-refresh:hover{border-color:var(--gold);color:var(--text)}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.card-label{font-size:.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.card-value{font-size:1.5rem;font-weight:600}
+.card-sub{font-size:.78rem;color:var(--text2);margin-top:4px}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:600}
+.badge-green{background:#065f4622;color:var(--green);border:1px solid #065f4655}
+.badge-orange{background:#7c2d1222;color:var(--orange);border:1px solid #7c2d1255}
+
+/* CHART */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.section-title{font-size:1rem;font-weight:600;margin-bottom:18px;color:var(--text)}
+.bar-chart{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:flex;align-items:center;gap:12px}
+.bar-label{width:160px;font-size:.85rem;color:var(--text2);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:28px;background:var(--surface2);border-radius:6px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;transition:width .6s ease}
+.bar-pct{font-size:.75rem;font-weight:600;color:#fff;white-space:nowrap}
+.bar-value{width:110px;font-size:.85rem;color:var(--text2);text-align:right;flex-shrink:0}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{text-align:left;color:var(--text2);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.5px}
+td{padding:10px 12px;border-bottom:1px solid var(--border)22}
+tr:last-child td{border-bottom:none}
+tr.total-row{background:var(--surface2);font-weight:700}
+tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
+.text-right{text-align:right}
+
+/* FOOTER */
+.footer{margin-top:28px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.8rem;color:var(--text2);line-height:1.7}
+.footer strong{color:var(--text)}
+.refresh-bar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.refresh-ts{font-size:.78rem;color:var(--text2)}
+
+/* SPINNER */
+.spinner-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-text{color:var(--text2);font-size:.9rem}
+
+/* RESPONSIVE */
+@media(max-width:800px){
+  .cards{grid-template-columns:1fr}
+  .bar-label{width:100px;font-size:.78rem}
+  .bar-value{width:80px;font-size:.78rem}
+}
+@media(max-width:500px){
+  .header{flex-direction:column;align-items:flex-start}
+  .bar-row{flex-wrap:wrap}
+  .bar-label{width:100%;text-align:left}
+  .bar-value{width:100%;text-align:left}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="logo">&#9764;&#65039;</div>
+    <h1>MedWeb Billing</h1>
+    <p>Painel de custos do projeto MedWeb.<br>Faça login com sua conta GitHub autorizada.</p>
+    <div id="login-error" class="error-banner" style="display:none"></div>
+    <a href="/api/auth/login" class="btn-github">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Entrar com GitHub
+    </a>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-screen" class="spinner-wrap" style="display:none">
+  <div class="spinner"></div>
+  <div class="spinner-text">Carregando dados de billing...</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="app" style="display:none">
+  <div class="header">
+    <h1>&#9764;&#65039; MedWeb Billing</h1>
+    <div class="user-info">
+      <img id="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <a href="/api/auth/logout" class="btn-logout">Sair</a>
+    </div>
+  </div>
+
+  <div id="api-warn" class="warn-banner" style="display:none">&#9888;&#65039; Não foi possível conectar à API da Anthropic. Exibindo dados estimados.</div>
+
+  <div class="refresh-bar">
+    <button class="btn-refresh" onclick="loadCosts()">&#8635; Atualizar</button>
+    <span id="refresh-ts" class="refresh-ts"></span>
+  </div>
+
+  <div class="cards" id="cards"></div>
+  <div class="section" id="chart-section">
+    <div class="section-title">Composição dos Custos</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+  <div class="section" id="table-section">
+    <div class="section-title">Detalhamento</div>
+    <div class="table-wrap"><table id="detail-table"></table></div>
+  </div>
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+const ERROR_MSGS = {
+  unauthorized: 'Acesso negado. Sua conta GitHub não está autorizada.',
+  token_failed: 'Falha ao obter token de autenticação. Tente novamente.',
+  server_error: 'Erro interno do servidor. Tente novamente mais tarde.',
+  no_code: 'Código de autorização não recebido. Tente novamente.'
+};
+
+const CATEGORY_COLORS = {
+  api_tokens: '#7c9aff',
+  claude_max_5x: '#a78bfa',
+  claude_max_20x: '#c084fc',
+  lovable_pro: '#f472b6',
+  vercel_pro: '#38bdf8',
+  apple_developer: '#60a5fa'
+};
+
+const FALLBACK_DATA = {
+  period: { start: '2025-10-01', end: new Date().toISOString().split('T')[0] },
+  exchange: { usd_brl: 5.80, iof_rate: 0.035 },
+  api_tokens: { usd: 1766.32, brl: 10244.66, iof: 358.56, total_brl: 10603.22 },
+  fixed_costs: [
+    { id: 'claude_max_5x', label: 'Claude Max 5x (4 meses)', months: 4, usd: 400, brl: 2320, iof: 81.2, total_brl: 2401.2 },
+    { id: 'claude_max_20x', label: 'Claude Max 20x (1 mês)', months: 1, usd: 200, brl: 1160, iof: 40.6, total_brl: 1200.6 },
+    { id: 'lovable_pro', label: 'Lovable Pro (5 meses)', months: 5, usd: 125, brl: 725, iof: 25.38, total_brl: 750.38 },
+    { id: 'vercel_pro', label: 'Vercel Pro (5 meses)', months: 5, usd: 100, brl: 580, iof: 20.3, total_brl: 600.3 },
+    { id: 'apple_developer', label: 'Apple Developer (anual)', months: 1, usd: 99, brl: 574.2, iof: 20.1, total_brl: 594.3 }
+  ],
+  totals: { usd: 2690.32, brl: 16149.9, budget_brl: 536500, budget_pct: 3.01 },
+  fetched_at: new Date().toISOString(),
+  _fallback: true
+};
+
+let currentUser = null;
+
+function fmt(n) { return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function show(id) { document.getElementById(id).style.display = ''; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+async function init() {
+  // Check error param
+  const params = new URLSearchParams(window.location.search);
+  const err = params.get('error');
+  if (err) {
+    window.history.replaceState({}, '', '/');
+  }
+
+  // Check auth
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    if (data.authenticated) {
+      currentUser = data.user;
+      showDashboard(err);
+      return;
+    }
+  } catch (e) {}
+
+  showLogin(err);
+}
+
+function showLogin(err) {
+  hide('loading-screen');
+  hide('dashboard');
+  show('login-screen');
+  if (err && ERROR_MSGS[err]) {
+    const el = document.getElementById('login-error');
+    el.textContent = ERROR_MSGS[err];
+    el.style.display = '';
+  }
+}
+
+async function showDashboard(err) {
+  hide('login-screen');
+  show('loading-screen');
+
+  document.getElementById('user-avatar').src = currentUser.avatar || currentUser.avatar_url || '';
+  document.getElementById('user-name').textContent = currentUser.name || currentUser.login;
+
+  await loadCosts();
+
+  hide('loading-screen');
+  show('dashboard');
+
+  if (err && ERROR_MSGS[err]) {
+    const el = document.getElementById('login-error');
+    el.textContent = ERROR_MSGS[err];
+    el.style.display = '';
+  }
+}
+
+async function loadCosts() {
+  let data;
+  let isFallback = false;
+
+  try {
+    const res = await fetch('/api/costs');
+    if (!res.ok) throw new Error('API error');
+    data = await res.json();
+  } catch (e) {
+    data = FALLBACK_DATA;
+    isFallback = true;
+  }
+
+  const warn = document.getElementById('api-warn');
+  warn.style.display = isFallback ? '' : 'none';
+
+  renderCards(data);
+  renderChart(data);
+  renderTable(data);
+  renderFooter(data);
+
+  const ts = new Date(data.fetched_at || Date.now());
+  document.getElementById('refresh-ts').textContent =
+    'Última atualização: ' + ts.toLocaleString('pt-BR');
+}
+
+function renderCards(data) {
+  const t = data.totals;
+  const ex = data.exchange;
+  const totalIof = data.api_tokens.iof + data.fixed_costs.reduce((s, c) => s + c.iof, 0);
+  const pctClass = t.budget_pct < 10 ? 'badge-green' : 'badge-orange';
+
+  document.getElementById('cards').innerHTML = `
+    <div class="card">
+      <div class="card-label">Total Investido</div>
+      <div class="card-value mono" style="color:var(--gold)">R$ ${fmt(t.brl)}</div>
+      <div class="card-sub"><span class="badge ${pctClass}">${fmt(t.budget_pct)}% do orçamento</span></div>
+      <div class="card-sub">Orçamento: R$ ${fmt(t.budget_brl)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total em USD</div>
+      <div class="card-value mono">$ ${fmt(t.usd)}</div>
+      <div class="card-sub">Valor antes da conversão</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Câmbio USD → BRL</div>
+      <div class="card-value mono" style="color:var(--green)">R$ ${fmt(ex.usd_brl)}</div>
+      <div class="card-sub">Taxa utilizada</div>
+    </div>
+    <div class="card">
+      <div class="card-label">IOF Total</div>
+      <div class="card-value mono" style="color:var(--orange)">R$ ${fmt(totalIof)}</div>
+      <div class="card-sub">Taxa: ${(ex.iof_rate * 100).toFixed(1)}%</div>
+    </div>`;
+}
+
+function renderChart(data) {
+  const items = [
+    { id: 'api_tokens', label: 'API Tokens', total: data.api_tokens.total_brl },
+    ...data.fixed_costs.map(c => ({ id: c.id, label: c.label, total: c.total_brl }))
+  ];
+  const max = Math.max(...items.map(i => i.total));
+  const grand = items.reduce((s, i) => s + i.total, 0);
+
+  document.getElementById('bar-chart').innerHTML = items.map(item => {
+    const pct = (item.total / grand * 100);
+    const width = Math.max(item.total / max * 100, 3);
+    const color = CATEGORY_COLORS[item.id] || '#888';
+    return `<div class="bar-row">
+      <div class="bar-label">${item.label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${width}%;background:${color}">
+          <span class="bar-pct">${pct.toFixed(1)}%</span>
+        </div>
+      </div>
+      <div class="bar-value mono">R$ ${fmt(item.total)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable(data) {
+  const rows = [
+    { label: 'API Tokens (Anthropic)', usd: data.api_tokens.usd, brl: data.api_tokens.brl, iof: data.api_tokens.iof, total: data.api_tokens.total_brl },
+    ...data.fixed_costs.map(c => ({ label: c.label, usd: c.usd, brl: c.brl, iof: c.iof, total: c.total_brl }))
+  ];
+  const sumUsd = rows.reduce((s, r) => s + r.usd, 0);
+  const sumBrl = rows.reduce((s, r) => s + r.brl, 0);
+  const sumIof = rows.reduce((s, r) => s + r.iof, 0);
+  const sumTotal = rows.reduce((s, r) => s + r.total, 0);
+
+  document.getElementById('detail-table').innerHTML = `
+    <thead><tr>
+      <th>Item</th>
+      <th class="text-right">USD</th>
+      <th class="text-right">BRL</th>
+      <th class="text-right">IOF</th>
+      <th class="text-right">Total (R$)</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td>${r.label}</td>
+        <td class="text-right mono">$ ${fmt(r.usd)}</td>
+        <td class="text-right mono">R$ ${fmt(r.brl)}</td>
+        <td class="text-right mono">R$ ${fmt(r.iof)}</td>
+        <td class="text-right mono">R$ ${fmt(r.total)}</td>
+      </tr>`).join('')}
+      <tr class="total-row">
+        <td>Total</td>
+        <td class="text-right mono">$ ${fmt(sumUsd)}</td>
+        <td class="text-right mono">R$ ${fmt(sumBrl)}</td>
+        <td class="text-right mono">R$ ${fmt(sumIof)}</td>
+        <td class="text-right mono">R$ ${fmt(sumTotal)}</td>
+      </tr>
+    </tbody>`;
+}
+
+function renderFooter(data) {
+  document.getElementById('footer').innerHTML = `
+    <strong>Notas:</strong><br>
+    &#8226; Dados de consumo da API obtidos via Anthropic Admin API (endpoint de cost report).<br>
+    &#8226; Câmbio USD → BRL fixado em R$ ${fmt(data.exchange.usd_brl)}. IOF de ${(data.exchange.iof_rate * 100).toFixed(1)}% aplicado sobre todas as transações internacionais.<br>
+    &#8226; Período: ${new Date(data.period.start).toLocaleDateString('pt-BR')} a ${new Date(data.period.end).toLocaleDateString('pt-BR')}.<br>
+    &#8226; Orçamento total do projeto MedWeb: R$ ${fmt(data.totals.budget_brl)}.`;
+}
+
+init();
+</script>
+</body>
+</html>
