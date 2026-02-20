@@ -32,7 +32,7 @@ body{height:100%;display:flex;justify-content:center}
 .warn-banner{background:#78350f66;border:1px solid #f59e0b;color:#fcd34d;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:.82rem;text-align:center}
 
 /* LAYOUT */
-.app{width:100%;max-width:960px;padding:24px 32px 20px;display:flex;flex-direction:column;height:100vh}
+.app{width:100%;max-width:1300px;padding:24px 40px 20px;display:flex;flex-direction:column;height:100vh}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:8px}
 .header-left{display:flex;align-items:center;gap:14px}
 .header h1{font-size:1.2rem;font-weight:700;color:var(--gold)}
@@ -66,8 +66,8 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
 .text-right{text-align:right}
 .item-cell{display:flex;align-items:center;gap:10px}
 .item-name{flex-shrink:0}
-.item-bar{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;min-width:40px}
-.item-bar-fill{height:100%;border-radius:3px}
+.item-bar{flex:1;height:14px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:60px}
+.item-bar-fill{height:100%;border-radius:4px}
 .item-pct{font-size:.68rem;color:var(--text2);flex-shrink:0;width:36px;text-align:right}
 
 /* FOOTER */
@@ -81,7 +81,7 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
 
 /* 2K */
 @media(min-width:1600px){
-  .app{max-width:1200px;padding:32px 48px 24px}
+  .app{max-width:1500px;padding:32px 48px 24px}
   .header h1{font-size:1.4rem}
   .cards{gap:14px;margin-bottom:20px}
   .card{padding:18px 20px}
@@ -92,12 +92,12 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
   table{font-size:.9rem}
   th{padding:9px 14px;font-size:.72rem}
   td{padding:9px 14px}
-  .item-bar{height:8px}
+  .item-bar{height:16px}
   .footer{font-size:.74rem;padding:10px 20px}
 }
 /* 4K */
 @media(min-width:2200px){
-  .app{max-width:1600px;padding:48px 72px 32px}
+  .app{max-width:1900px;padding:48px 72px 32px}
   .header h1{font-size:1.7rem}
   .user-info img{width:36px;height:36px}
   .user-info span{font-size:.95rem}
@@ -112,7 +112,7 @@ tr.total-row td{border-top:2px solid var(--gold);color:var(--gold)}
   table{font-size:1rem}
   th{padding:12px 18px;font-size:.78rem}
   td{padding:12px 18px}
-  .item-bar{height:10px;border-radius:5px}
+  .item-bar{height:20px;border-radius:6px}
   .item-pct{font-size:.78rem;width:42px}
   .footer{font-size:.82rem;padding:12px 24px;border-radius:16px}
   .refresh-ts{font-size:.78rem}
@@ -299,7 +299,7 @@ function renderTable(data) {
 
   document.getElementById('detail-table').innerHTML = `
     <thead><tr>
-      <th style="width:40%">Item</th>
+      <th style="width:48%">Item</th>
       <th class="text-right">USD</th>
       <th class="text-right">BRL</th>
       <th class="text-right">IOF</th>
