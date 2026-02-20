@@ -13,7 +13,12 @@ const FIXED_COSTS = [
 ];
 
 const IOF_RATE = 0.035;
-const BRL_RATE = 5.80; // Will be updated with live rate if possible
+const BRL_RATE = 5.80;
+
+// In-memory cache (survives across warm invocations on Vercel)
+let cachedResult = null;
+let cachedAt = 0;
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function getFixedCostsForPeriod(startDate, endDate) {
   const costs = [];
@@ -24,7 +29,6 @@ function getFixedCostsForPeriod(startDate, endDate) {
     const itemStart = new Date(item.start + '-01');
     const itemEnd = item.end ? new Date(item.end + '-28') : end;
 
-    // Count months in overlap
     let months = 0;
     let d = new Date(Math.max(start, itemStart));
     const stop = new Date(Math.min(end, itemEnd));
@@ -53,13 +57,14 @@ function getFixedCostsForPeriod(startDate, endDate) {
   return costs;
 }
 
-async function fetchWithRetry(url, headers, retries = 3) {
+async function fetchWithRetry(url, headers, retries = 4) {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, { headers });
     if (res.ok) return res;
     if (res.status === 429 && i < retries - 1) {
-      const wait = Math.pow(2, i + 1) * 1000;
-      console.log(`Rate limited, waiting ${wait}ms before retry ${i + 1}...`);
+      const retryAfter = res.headers.get('retry-after');
+      const wait = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, i + 1) * 2000;
+      console.log(`Rate limited, waiting ${wait}ms (attempt ${i + 1}/${retries})...`);
       await new Promise(r => setTimeout(r, wait));
       continue;
     }
@@ -97,7 +102,7 @@ async function fetchAnthropicCosts(startDate, endDate) {
 
       if (!page.has_more || buckets.length === 0) break;
 
-      // Use the last bucket's ending_at as the next starting_at
+      // Paginate: use last bucket's ending_at as next starting_at
       currentStart = buckets[buckets.length - 1].ending_at;
     }
 
@@ -109,17 +114,21 @@ async function fetchAnthropicCosts(startDate, endDate) {
 }
 
 module.exports = async (req, res) => {
-  // Auth check
   const user = verifyAuth(req);
   if (!user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Default: from project start to today
   const startDate = req.query.start || '2025-10-01';
   const endDate = req.query.end || new Date().toISOString().split('T')[0];
+  const cacheKey = `${startDate}_${endDate}`;
 
-  // Fetch Anthropic cost data (with pagination)
+  // Return cached data if fresh
+  if (cachedResult && cachedResult._cacheKey === cacheKey && (Date.now() - cachedAt) < CACHE_TTL) {
+    return res.json({ ...cachedResult, _cached: true });
+  }
+
+  // Fetch from Anthropic
   const apiTokensResult = await fetchAnthropicCosts(startDate, endDate);
   const apiTokensUSD = apiTokensResult !== null ? apiTokensResult : 0;
   const apiDataAvailable = apiTokensResult !== null;
@@ -127,19 +136,16 @@ module.exports = async (req, res) => {
   const apiTokensBRL = apiTokensUSD * BRL_RATE;
   const apiTokensIOF = apiTokensBRL * IOF_RATE;
 
-  // Fixed costs
   const fixedCosts = getFixedCostsForPeriod(startDate, endDate);
   const totalFixedUSD = fixedCosts.reduce((s, c) => s + c.usd, 0);
   const totalFixedBRL = fixedCosts.reduce((s, c) => s + c.total_brl, 0);
 
-  // Grand total
   const totalUSD = apiTokensUSD + totalFixedUSD;
   const totalBRL = (apiTokensBRL + apiTokensIOF) + totalFixedBRL;
 
-  // Project budget
   const projectBudget = 536500;
 
-  res.json({
+  const result = {
     period: { start: startDate, end: endDate },
     exchange: { usd_brl: BRL_RATE, iof_rate: IOF_RATE },
     api_tokens: {
@@ -157,5 +163,14 @@ module.exports = async (req, res) => {
       budget_pct: Math.round((totalBRL / projectBudget) * 10000) / 100,
     },
     fetched_at: new Date().toISOString(),
-  });
+    _cacheKey: cacheKey,
+  };
+
+  // Cache if API data was available
+  if (apiDataAvailable) {
+    cachedResult = result;
+    cachedAt = Date.now();
+  }
+
+  res.json(result);
 };
