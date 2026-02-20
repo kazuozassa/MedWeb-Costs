@@ -188,6 +188,7 @@ const ERROR_MSGS = {
 };
 
 const CATEGORY_COLORS = {
+  api_tokens: '#7c9aff',
   claude_ai: '#a78bfa',
   lovable_pro: '#f472b6',
   vercel_pro: '#38bdf8',
@@ -198,6 +199,7 @@ const FALLBACK_DATA = {
   period: { start: '2025-05-01', end: new Date().toISOString().split('T')[0] },
   exchange: { usd_brl: 5.80, iof_rate: 0.035 },
   items: [
+    { id: 'api_tokens', label: 'API Tokens (Anthropic)', usd: 1766.32, brl: 10244.66, iof: 358.56, total_brl: 10603.22 },
     { id: 'claude_ai', label: 'Claude.ai (mai/2025)', usd: 94.83, brl: 550, iof: 0, total_brl: 550 },
     { id: 'claude_ai', label: 'Claude.ai (jan/2026)', usd: 189.66, brl: 1100, iof: 0, total_brl: 1100 },
     { id: 'claude_ai', label: 'Claude.ai (fev/2026)', usd: 14.11, brl: 81.84, iof: 0, total_brl: 81.84 },
@@ -206,7 +208,7 @@ const FALLBACK_DATA = {
     { id: 'vercel_pro', label: 'Vercel Pro (5 meses)', usd: 100, brl: 580, iof: 20.3, total_brl: 600.3 },
     { id: 'apple_developer', label: 'Apple Developer (anual)', usd: 99, brl: 574.2, iof: 20.1, total_brl: 594.3 }
   ],
-  totals: { usd: 670.01, brl: 3956.52, iof: 65.78, budget_brl: 536500, budget_pct: 0.74 },
+  totals: { usd: 2436.33, brl: 14559.74, iof: 424.34, budget_brl: 536500, budget_pct: 2.71 },
   fetched_at: new Date().toISOString(),
   _fallback: true
 };

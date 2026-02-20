@@ -7,6 +7,10 @@ const BRL_RATE = 5.80;
 // Claude.ai invoices are in BRL (already charged to card)
 // Other services are in USD (converted with BRL_RATE + IOF)
 const COSTS = [
+  // API Tokens — Anthropic API usage (USD, converted to BRL + IOF)
+  // Value from env var ANTHROPIC_API_TOKENS_USD, or fallback estimate
+  { id: 'api_tokens', label: 'API Tokens (Anthropic)', usd: parseFloat(process.env.ANTHROPIC_API_TOKENS_USD || '1766.32'), currency: 'USD' },
+
   // Claude.ai — actual invoices from billing page
   { id: 'claude_ai', label: 'Claude.ai (mai/2025)', brl: 550.00, currency: 'BRL' },
   { id: 'claude_ai', label: 'Claude.ai (jan/2026)', brl: 1100.00, currency: 'BRL' },
